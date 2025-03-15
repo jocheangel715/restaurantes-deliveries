@@ -1,0 +1,78 @@
+@import "../RESOURCES/THEMES/dark.css";
+
+/* Fondo de la página */
+body {
+    background-color: var(--primary-color);
+    margin: 0;
+    padding: 0;
+}
+
+/* Contenedor principal */
+.home-container {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;  /* Ajusta el ancho máximo */
+    position: absolute;
+    top: 20px;  /* Lo coloca en la parte superior */
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Mensaje de bienvenida centrado */
+.welcome-message {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Estilos de balance */
+.balance {
+    color: var(--balance-color);
+    margin-top: 10px;
+    text-align: center;
+}
+
+/* Sección de pedidos */
+.orders {
+    color: var(--orders-color);
+    margin-top: 20px;
+}
+
+.orders ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.orders li {
+    background-color: var(--container-background);
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+/* Botón de logout */
+.logout-button {
+    background-color: var(--button-color);
+    color: var(--button-text-color);
+    border: none;
+    padding: 10px 20px;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    transition: background-color 0.3s ease-in-out, transform 0.2s;
+}
+
+.logout-button:hover {
+    background-color: var(--button-hover-color);
+    transform: scale(1.05);
+}

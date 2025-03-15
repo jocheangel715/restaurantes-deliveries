@@ -1,0 +1,12 @@
+:root {
+  --background-color: #121212;
+  --text-color: #ffffff;
+  --container-background: #1e1e1e;
+  --input-background: #333;
+  --input-border: #555;
+  --button-color: #444;
+  --button-text-color: #fff;
+  --button-hover-color: #666;
+  --balance-color: #76ff03;
+  --orders-color: #ff9100;
+}
