@@ -1,69 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { doc, getDoc, collection, getDocs, query, where, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Detalles.css';
 
-const Detalles = ({ order, closeModal }) => {
-  const [domiciliarios, setDomiciliarios] = useState([]);
-  const [selectedDomiciliario, setSelectedDomiciliario] = useState('');
+const Detalles = ({ order, closeModal, orderId }) => {
   const [isDomicilio, setIsDomicilio] = useState(false);
+  const [incorrectPayment, setIncorrectPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [name, setName] = useState('');
+  const [userId, setUserId] = useState('');
 
   useEffect(() => {
-    if (isDomicilio) {
-      fetchDomiciliarios();
-    }
-  }, [isDomicilio]);
+    const auth = getAuth();
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const db = getFirestore();
+          const q = query(collection(db, 'CLIENTES'), where('email', '==', user.email));
+          const querySnapshot = await getDocs(q);
 
-  const fetchDomiciliarios = async () => {
-    try {
-      const q = query(collection(db, 'CLIENTES'), where('role', '==', 'DOMICILIARIO'));
-      const querySnapshot = await getDocs(q);
-      const items = [];
-      querySnapshot.forEach((doc) => {
-        items.push(doc.data());
-      });
-      setDomiciliarios(items);
-    } catch (error) {
-      console.error('Error fetching domiciliarios:', error);
-    }
-  };
+          querySnapshot.forEach((docSnapshot) => {
+            const data = docSnapshot.data();
+            setName(data.name);
+            setUserId(data.id);
+          });
+        } catch (error) {
+          console.error('Error obteniendo datos del usuario:', error);
+        }
+      }
+    });
+  }, [orderId]);
 
-  const updateOrderStatus = async (status, domiciliario = null) => {
+  const updateOrderStatus = async (status) => {
     try {
       const now = new Date();
       const date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
       const docId = date;
 
-      const orderDoc = doc(db, 'PEDIDOS', docId);
+      const orderDoc = doc(db, 'DOMICILIOS', docId);
       const orderSnapshot = await getDoc(orderDoc);
 
       if (orderSnapshot.exists()) {
         const data = orderSnapshot.data();
-        const periods = ['MORNING', 'NIGHT'];
-        let orderFound = false;
+        const period = now.getHours() < 17 ? 'MORNING' : 'NIGHT';
+        const domiciliarioData = data[userId] || {};
 
-        for (const period of periods) {
-          if (data[period] && data[period][order.id]) {
-            data[period][order.id].status = status;
-            if (domiciliario) {
-              data[period][order.id].domiciliario = domiciliario;
+        if (domiciliarioData[period]) {
+          const orderKeys = Object.keys(domiciliarioData[period]).filter(key => key !== 'balance');
+          let orderFound = false;
+
+          orderKeys.forEach((key) => {
+            if (domiciliarioData[period][key].id === orderId) {
+              domiciliarioData[period][key].status = status;
+              if (incorrectPayment) {
+                domiciliarioData[period][key].paymentMethod = paymentMethod;
+              }
+              orderFound = true;
             }
-            await setDoc(orderDoc, { [period]: data[period] }, { merge: true });
-            orderFound = true;
-            break;
-          }
-        }
+          });
 
-        if (orderFound) {
-          if (domiciliario) {
-            await saveDomicilioOrder(date, domiciliario, order);
+          if (orderFound) {
+            const balance = domiciliarioData[period].balance || { EFECTIVO: 0, NEQUI: 0 };
+            balance[paymentMethod] = (balance[paymentMethod] || 0) + order.total;
+
+            await setDoc(orderDoc, { [userId]: { [period]: { ...domiciliarioData[period], balance } } }, { merge: true });
+            toast.success(`Pedido actualizado a ${status}`);
+            closeModal();
+          } else {
+            toast.error('Pedido no encontrado');
           }
-          toast.success(`Pedido actualizado a ${status}`);
-          closeModal();
         } else {
-          toast.error('Pedido no encontrado');
+          toast.error('Datos del domiciliario no encontrados');
         }
       } else {
         toast.error('Documento de pedidos no encontrado');
@@ -74,45 +85,12 @@ const Detalles = ({ order, closeModal }) => {
     }
   };
 
-  const saveDomicilioOrder = async (date, domiciliario, order) => {
-    try {
-      const now = new Date();
-      const period = now.getHours() < 17 ? 'MORNING' : 'NIGHT';
-      const domicilioDoc = doc(db, 'DOMICILIOS', date);
-      const domicilioSnapshot = await getDoc(domicilioDoc);
-
-      let domicilioData = {};
-      if (domicilioSnapshot.exists()) {
-        domicilioData = domicilioSnapshot.data();
-      }
-
-      if (!domicilioData[domiciliario]) {
-        domicilioData[domiciliario] = {};
-      }
-
-      if (!domicilioData[domiciliario][period]) {
-        domicilioData[domiciliario][period] = {};
-      }
-
-      domicilioData[domiciliario][period][order.id] = {
-        ...order,
-        domiciliario,
-        status: 'ENDOMICILIO'
-      };
-
-      await setDoc(domicilioDoc, domicilioData, { merge: true });
-    } catch (error) {
-      console.error('Error saving domicilio order:', error);
-      toast.error('Error al guardar el pedido en domicilio');
+  const handleEntregado = () => {
+    if (!orderId || !userId) {
+      toast.error('Faltan datos del pedido o domiciliario');
+      return;
     }
-  };
-
-  const handleLlamadoEnCocina = () => {
-    updateOrderStatus('ENCOCINA');
-  };
-
-  const handleEnDomicilio = () => {
-    updateOrderStatus('ENDOMICILIO', selectedDomiciliario);
+    updateOrderStatus('ENTREGADO');
   };
 
   return (
@@ -124,6 +102,32 @@ const Detalles = ({ order, closeModal }) => {
           <span className="detalles-close" onClick={closeModal}>&times;</span>
           <h2>Detalles del Pedido</h2>
           <div className="detalles-content">
+            <h3>Información del Cliente:</h3>
+            <p><strong>Nombre:</strong> {order.clientName}</p>
+            <p><strong>Teléfono:</strong> {order.clientPhone}</p>
+            <p><strong>Dirección:</strong> {order.clientAddress}</p>
+            <p><strong>Barrio:</strong> {order.clientBarrio}</p>
+            <p><strong>Método de Pago:</strong> {incorrectPayment ? paymentMethod : order.paymentMethod}</p> {/* Display payment method */}
+            <label>
+              <input
+                type="checkbox"
+                checked={incorrectPayment}
+                onChange={() => setIncorrectPayment(!incorrectPayment)}
+              />
+              El pago no fue por el método de pago correcto?
+            </label>
+            {incorrectPayment && (
+              <select
+                value={paymentMethod}
+                onChange={(e) => {
+                  setPaymentMethod(e.target.value);
+                }}
+              >
+                <option value="">Seleccionar método de pago</option>
+                <option value="NEQUI">NEQUI</option>
+                <option value="EFECTIVO">EFECTIVO</option>
+              </select>
+            )}
             <h3>Productos:</h3>
             {order.cart.map((product, index) => (
               <div key={index}>
@@ -136,31 +140,7 @@ const Detalles = ({ order, closeModal }) => {
               </div>
             ))}
           </div>
-          <button className="detalles-button" onClick={handleLlamadoEnCocina}>LLAMADO EN COCINA</button>
-          <div className="domicilio-section">
-            <label>
-              <input
-                type="checkbox"
-                checked={isDomicilio}
-                onChange={() => setIsDomicilio(!isDomicilio)}
-              />
-              En domicilio
-            </label>
-            {isDomicilio && (
-              <select
-                value={selectedDomiciliario}
-                onChange={(e) => setSelectedDomiciliario(e.target.value)}
-              >
-                <option value="">Seleccionar domiciliario</option>
-                {domiciliarios.map((domiciliario) => (
-                  <option key={domiciliario.id} value={domiciliario.id}>{domiciliario.name}</option>
-                ))}
-              </select>
-            )}
-            {isDomicilio && (
-              <button className="detalles-button" onClick={handleEnDomicilio}>ENDOMICILIO</button>
-            )}
-          </div>
+          <button className="detalles-button" onClick={handleEntregado}>ENTREGADO</button>
         </div>
       </div>
     </div>

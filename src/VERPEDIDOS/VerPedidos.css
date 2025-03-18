@@ -1,0 +1,157 @@
+/* Contenedor principal */
+.verpedidos-container {
+  max-width: 90%;
+  width: 800px;
+  padding: 20px;
+  background: #121212; /* Negro elegante */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  animation: fadeIn 0.5s ease-in-out;
+  text-align: center;
+}
+
+/* Título */
+.verpedidos-container h2 {
+  font-size: 2rem;
+  color: #ffffff;
+  margin-bottom: 20px;
+  animation: slideDown 0.6s ease-in-out;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Lista de pedidos */
+.verpedidos-orders-list {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #6a11cb #1c1c1c;
+}
+
+/* Estilo de cada pedido */
+.verpedidos-order-item {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  color: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s, box-shadow 0.3s;
+  animation: fadeInUp 0.5s ease-in-out;
+  min-width: 220px;
+  max-width: 260px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Estilo para PEDIDOTOMADO */
+.verpedidos-order-item.pedido-tomado {
+  background: linear-gradient(135deg, #ff4b4b, #ff0000); /* Rojo */
+}
+
+/* Estilo para ENCOCINA */
+.verpedidos-order-item.en-cocina {
+  background: linear-gradient(135deg, #ffeb3b, #ffc107); /* Amarillo */
+}
+
+/* Estilo para DOMICILIO */
+.verpedidos-order-item.domicilio {
+  background: linear-gradient(135deg, #4caf50, #2e7d32); /* Verde */
+}
+
+.verpedidos-order-item:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+}
+
+/* Texto dentro del pedido */
+.verpedidos-order-item h3 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.verpedidos-order-item p {
+  font-size: 1rem;
+  margin: 4px 0;
+  opacity: 0.9;
+}
+
+/* Controles de paginación */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pagination-controls button {
+  background-color: #6a11cb;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  margin: 0 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.pagination-controls button:hover {
+  background-color: #2575fc;
+  transform: scale(1.05);
+}
+
+.pagination-controls button:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+}
+
+.pagination-controls span {
+  font-size: 1.2rem;
+  color: white;
+  font-weight: bold;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+      opacity: 0;
+      transform: scale(0.9);
+  }
+  to {
+      opacity: 1;
+      transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+      opacity: 0;
+      transform: translateY(-20px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+      opacity: 0;
+      transform: translateY(20px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+.verpedidos-order-item {
+  word-wrap: break-word;  /* Rompe palabras largas */
+  overflow-wrap: break-word; /* Alternativa para navegadores modernos */
+  white-space: normal; /* Permite saltos de línea */
+}
