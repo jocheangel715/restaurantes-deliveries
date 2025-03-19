@@ -140,6 +140,36 @@
   transform: scale(1.05);
 }
 
+.whatsapp-button {
+  background-color: #25D366;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  margin-left: 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.whatsapp-button:hover {
+  background-color: #1DA851;
+}
+
+.maps-button {
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  margin-left: 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.maps-button:hover {
+  background-color: #357AE8;
+}
+
 .domicilio-section {
   margin-top: 20px;
   font-size: 14px;

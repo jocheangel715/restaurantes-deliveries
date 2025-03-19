@@ -40,7 +40,7 @@ const Home = () => {
           // Determinar el periodo del día
           const now = new Date();
           const hour = now.getHours();
-          const selectedPeriod = hour >= 18 ? 'NIGHT' : 'MORNING'; // Cambia a 'NIGHT' desde las 18:00 hasta las 23:59
+          const selectedPeriod = hour >= 17 ? 'NIGHT' : 'MORNING'; // Cambia a 'NIGHT' desde las 18:00 hasta las 23:59
 
           const dateStr = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
           const balanceDocRef = doc(db, 'DOMICILIOS', dateStr);

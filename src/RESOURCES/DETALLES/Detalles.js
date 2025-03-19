@@ -35,6 +35,65 @@ const Detalles = ({ order, closeModal, orderId }) => {
     });
   }, [orderId]);
 
+  const actualizarPedido = async (paymentMethod, status, orderId) => {
+    try {
+      const now = new Date();
+      const date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
+      const period = now.getHours() < 17 ? 'MORNING' : 'NIGHT';
+  
+      console.log(`Buscando pedido en PEDIDOS...`);
+      console.log(`Método de Pago: ${paymentMethod}`);
+      console.log(`Estado: ${status}`);
+      console.log(`Order ID: ${orderId}`);
+  
+      // Referencia al documento del día en la colección PEDIDOS
+      const pedidoDocRef = doc(db, 'PEDIDOS', date);
+      const pedidoSnapshot = await getDoc(pedidoDocRef);
+  
+      if (pedidoSnapshot.exists()) {
+        const pedidosData = pedidoSnapshot.data();
+  
+        // Verifica que exista la estructura esperada
+        if (pedidosData[period] && pedidosData[period].PEDIDO) {
+          const pedidos = pedidosData[period].PEDIDO;
+          let pedidoEncontrado = false;
+          let updates = {};
+  
+          // Busca el pedido por su ID y prepara los datos a actualizar
+          Object.keys(pedidos).forEach((key) => {
+            if (pedidos[key].idPedido === orderId) {
+              updates[`${period}.PEDIDO.${key}.status`] = status;
+              updates[`${period}.PEDIDO.${key}.paymentMethod`] = paymentMethod;
+              pedidoEncontrado = true;
+            }
+          });
+  
+          if (pedidoEncontrado) {
+            // Actualiza solo los campos necesarios sin afectar el resto
+            await setDoc(pedidoDocRef, updates, { merge: true });
+  
+            console.log(`✅ Pedido ${orderId} actualizado a ${status}`);
+            toast.success(`Pedido actualizado a ${status}`);
+          } else {
+            console.log('⚠️ Pedido no encontrado en PEDIDOS');
+            toast.error('Pedido no encontrado en PEDIDOS');
+          }
+        } else {
+          console.log('⚠️ Estructura de PEDIDOS incorrecta');
+          toast.error('Datos de PEDIDOS no encontrados');
+        }
+      } else {
+        console.log('⚠️ Documento de PEDIDOS no encontrado');
+        toast.error('Documento de PEDIDOS no encontrado');
+      }
+    } catch (error) {
+      console.error('❌ Error actualizando el pedido:', error);
+      toast.error('Error al actualizar el estado del pedido');
+    }
+  };
+  
+  
+
   const updateOrderStatus = async (status) => {
     try {
       const now = new Date();
@@ -68,6 +127,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
             balance[paymentMethod] = (balance[paymentMethod] || 0) + order.total;
 
             await setDoc(orderDoc, { [userId]: { [period]: { ...domiciliarioData[period], balance } } }, { merge: true });
+            actualizarPedido(paymentMethod, status, orderId);
             toast.success(`Pedido actualizado a ${status}`);
             closeModal();
           } else {
@@ -93,6 +153,16 @@ const Detalles = ({ order, closeModal, orderId }) => {
     updateOrderStatus('ENTREGADO');
   };
 
+  const openWhatsApp = (phoneNumber) => {
+    const whatsappUrl = `https://wa.me/${phoneNumber}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const openGoogleMaps = (address) => {
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    window.open(mapsUrl, '_blank');
+  };
+
   return (
     <div className="detalles-container">
       <ToastContainer />
@@ -104,8 +174,24 @@ const Detalles = ({ order, closeModal, orderId }) => {
           <div className="detalles-content">
             <h3>Información del Cliente:</h3>
             <p><strong>Nombre:</strong> {order.clientName}</p>
-            <p><strong>Teléfono:</strong> {order.clientPhone}</p>
-            <p><strong>Dirección:</strong> {order.clientAddress}</p>
+            <p>
+              <strong>Teléfono:</strong> {order.clientPhone}
+              <button 
+                className="whatsapp-button" 
+                onClick={() => openWhatsApp(order.clientPhone)}
+              >
+                WhatsApp
+              </button>
+            </p>
+            <p>
+              <strong>Dirección:</strong> {order.clientAddress}
+              <button 
+                className="maps-button" 
+                onClick={() => openGoogleMaps(order.clientAddress)}
+              >
+                Maps
+              </button>
+            </p>
             <p><strong>Barrio:</strong> {order.clientBarrio}</p>
             <p><strong>Método de Pago:</strong> {incorrectPayment ? paymentMethod : order.paymentMethod}</p> {/* Display payment method */}
             <label>
