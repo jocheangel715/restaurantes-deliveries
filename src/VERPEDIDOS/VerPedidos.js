@@ -133,7 +133,7 @@ const VerPedidos = () => {
       <h2>Pedidos Recientes</h2>
       <div className="period-select">
         <label htmlFor="period">Seleccionar Periodo:</label>
-        <select id="period" value={period} onChange={handlePeriodChange}>
+        <select id="period" className='period-select-dropdown' value={period} onChange={handlePeriodChange}>
           <option value="MORNING">MORNING</option>
           <option value="NIGHT">NIGHT</option>
         </select>

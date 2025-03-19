@@ -35,65 +35,51 @@ const Detalles = ({ order, closeModal, orderId }) => {
     });
   }, [orderId]);
 
-  const actualizarPedido = async (paymentMethod, status, orderId) => {
+  const actualizarPedido = async (status) => {
     try {
       const now = new Date();
       const date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
-      const period = now.getHours() < 17 ? 'MORNING' : 'NIGHT';
+      const docId = date;
   
-      console.log(`Buscando pedido en PEDIDOS...`);
-      console.log(`Método de Pago: ${paymentMethod}`);
-      console.log(`Estado: ${status}`);
-      console.log(`Order ID: ${orderId}`);
+      const orderDoc = doc(db, 'PEDIDOS', docId);
+      const orderSnapshot = await getDoc(orderDoc);
   
-      // Referencia al documento del día en la colección PEDIDOS
-      const pedidoDocRef = doc(db, 'PEDIDOS', date);
-      const pedidoSnapshot = await getDoc(pedidoDocRef);
+      if (orderSnapshot.exists()) {
+        const data = orderSnapshot.data();
+        const period = now.getHours() < 17 ? 'MORNING' : 'NIGHT';
   
-      if (pedidoSnapshot.exists()) {
-        const pedidosData = pedidoSnapshot.data();
+        if (data[period]) {
+          const orderKeys = Object.keys(data[period]);
+          let orderFound = false;
   
-        // Verifica que exista la estructura esperada
-        if (pedidosData[period] && pedidosData[period].PEDIDO) {
-          const pedidos = pedidosData[period].PEDIDO;
-          let pedidoEncontrado = false;
-          let updates = {};
-  
-          // Busca el pedido por su ID y prepara los datos a actualizar
-          Object.keys(pedidos).forEach((key) => {
-            if (pedidos[key].idPedido === orderId) {
-              updates[`${period}.PEDIDO.${key}.status`] = status;
-              updates[`${period}.PEDIDO.${key}.paymentMethod`] = paymentMethod;
-              pedidoEncontrado = true;
+          orderKeys.forEach((key) => {
+            if (data[period][key].idPedido === orderId) {
+              data[period][key].status = status;
+              if (incorrectPayment) {
+                data[period][key].paymentMethod = paymentMethod;
+              }
+              orderFound = true;
             }
           });
   
-          if (pedidoEncontrado) {
-            // Actualiza solo los campos necesarios sin afectar el resto
-            await setDoc(pedidoDocRef, updates, { merge: true });
-  
-            console.log(`✅ Pedido ${orderId} actualizado a ${status}`);
+          if (orderFound) {
+            await setDoc(orderDoc, { [period]: data[period] }, { merge: true });
             toast.success(`Pedido actualizado a ${status}`);
+            closeModal();
           } else {
-            console.log('⚠️ Pedido no encontrado en PEDIDOS');
-            toast.error('Pedido no encontrado en PEDIDOS');
+            toast.error('Pedido no encontrado');
           }
         } else {
-          console.log('⚠️ Estructura de PEDIDOS incorrecta');
-          toast.error('Datos de PEDIDOS no encontrados');
+          toast.error('No hay pedidos en este turno');
         }
       } else {
-        console.log('⚠️ Documento de PEDIDOS no encontrado');
-        toast.error('Documento de PEDIDOS no encontrado');
+        toast.error('Documento de pedidos no encontrado');
       }
     } catch (error) {
-      console.error('❌ Error actualizando el pedido:', error);
+      console.error('Error updating order status:', error);
       toast.error('Error al actualizar el estado del pedido');
     }
   };
-  
-  
-
   const updateOrderStatus = async (status) => {
     try {
       const now = new Date();
@@ -123,13 +109,15 @@ const Detalles = ({ order, closeModal, orderId }) => {
           });
 
           if (orderFound) {
+            const paymentMethodToUse = incorrectPayment ? paymentMethod : order.paymentMethod;
             const balance = domiciliarioData[period].balance || { EFECTIVO: 0, NEQUI: 0 };
-            balance[paymentMethod] = (balance[paymentMethod] || 0) + order.total;
+            balance[paymentMethodToUse] = (balance[paymentMethodToUse] || 0) + order.total;
 
             await setDoc(orderDoc, { [userId]: { [period]: { ...domiciliarioData[period], balance } } }, { merge: true });
-            actualizarPedido(paymentMethod, status, orderId);
             toast.success(`Pedido actualizado a ${status}`);
-            closeModal();
+            
+            // Call actualizarPedido to update the order status in the 'PEDIDOS' collection
+            await actualizarPedido(status);
           } else {
             toast.error('Pedido no encontrado');
           }
@@ -145,6 +133,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
     }
   };
 
+
   const handleEntregado = () => {
     if (!orderId || !userId) {
       toast.error('Faltan datos del pedido o domiciliario');
@@ -157,7 +146,6 @@ const Detalles = ({ order, closeModal, orderId }) => {
     const whatsappUrl = `https://wa.me/${phoneNumber}`;
     window.open(whatsappUrl, '_blank');
   };
-
   const openGoogleMaps = (address) => {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
     window.open(mapsUrl, '_blank');
@@ -194,7 +182,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
             </p>
             <p><strong>Barrio:</strong> {order.clientBarrio}</p>
             <p><strong>Método de Pago:</strong> {incorrectPayment ? paymentMethod : order.paymentMethod}</p> {/* Display payment method */}
-            <label>
+            <label className="checkbox-label">
               <input
                 type="checkbox"
                 checked={incorrectPayment}
@@ -204,6 +192,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
             </label>
             {incorrectPayment && (
               <select
+                className="period-select-dropdown"
                 value={paymentMethod}
                 onChange={(e) => {
                   setPaymentMethod(e.target.value);

@@ -155,3 +155,15 @@
   overflow-wrap: break-word; /* Alternativa para navegadores modernos */
   white-space: normal; /* Permite saltos de línea */
 }
+.period-select-dropdown {
+  background-color: #121212;
+  border: 1px solid var(--orders-color);
+  ;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 16px;
+  margin-top: 10px;
+  padding: 10px;
+  transition: border-color .3s ease, box-shadow .3s ease;
+  width: 100%;
+}
