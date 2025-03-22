@@ -13,6 +13,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [name, setName] = useState('');
   const [userId, setUserId] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const auth = getAuth();
@@ -133,13 +134,21 @@ const Detalles = ({ order, closeModal, orderId }) => {
     }
   };
 
+  const formatPrice = (value) => {
+    if (value === null || value === undefined || value === '') return '0';
+    const stringValue = value.toString();
+    const numberValue = parseFloat(stringValue.replace(/[$,]/g, ''));
+    return `$${numberValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  };
 
-  const handleEntregado = () => {
+  const handleEntregado = async () => {
     if (!orderId || !userId) {
       toast.error('Faltan datos del pedido o domiciliario');
       return;
     }
-    updateOrderStatus('ENTREGADO');
+    setIsProcessing(true);
+    await updateOrderStatus('ENTREGADO');
+    setIsProcessing(false);
   };
 
   const openWhatsApp = (phoneNumber) => {
@@ -162,6 +171,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
           <div className="detalles-content">
             <h3>Información del Cliente:</h3>
             <p><strong>Nombre:</strong> {order.clientName}</p>
+            <p><strong>Número del Pedido:</strong> {orderId}</p> {/* Display order number */}
             <p>
               <strong>Teléfono:</strong> {order.clientPhone}
               <button 
@@ -182,6 +192,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
             </p>
             <p><strong>Barrio:</strong> {order.clientBarrio}</p>
             <p><strong>Método de Pago:</strong> {incorrectPayment ? paymentMethod : order.paymentMethod}</p> {/* Display payment method */}
+            <p><strong>Total:</strong> {formatPrice(order.total)}</p> {/* Display total */}
             <label className="checkbox-label">
               <input
                 type="checkbox"
@@ -215,7 +226,13 @@ const Detalles = ({ order, closeModal, orderId }) => {
               </div>
             ))}
           </div>
-          <button className="detalles-button" onClick={handleEntregado}>ENTREGADO</button>
+          <button 
+            className="detalles-button" 
+            onClick={handleEntregado} 
+            disabled={isProcessing}
+          >
+            {isProcessing ? 'Procesando...' : 'ENTREGADO'}
+          </button>
         </div>
       </div>
     </div>
