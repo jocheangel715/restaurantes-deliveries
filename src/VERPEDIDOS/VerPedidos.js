@@ -13,6 +13,7 @@ const VerPedidos = () => {
   const [selectedOrder, setSelectedOrder] = useState(null); // State for selected order
   const [period, setPeriod] = useState('MORNING'); // State for selected period
   const [userId, setUserId] = useState(''); // State for user ID
+  const [statusCounts, setStatusCounts] = useState({}); // State for status counts
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -20,7 +21,7 @@ const VerPedidos = () => {
       onAuthStateChanged(auth, (user) => {
         if (user) {
           const db = getFirestore();
-          const q = query(collection(db, 'CLIENTES'), where('email', '==', user.email));
+          const q = query(collection(db, 'EMPLEADOS'), where('email', '==', user.email));
           getDocs(q).then((querySnapshot) => {
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
@@ -51,6 +52,13 @@ const VerPedidos = () => {
           const filteredItems = items.filter(item => item.status !== 'ENTREGADO');
           filteredItems.sort((a, b) => (b.timestamp && b.timestamp.toDate()) - (a.timestamp && a.timestamp.toDate())); // Sort by timestamp
           setOrders(filteredItems);
+
+          // Calculate status counts
+          const counts = filteredItems.reduce((acc, item) => {
+            acc[item.status] = (acc[item.status] || 0) + 1;
+            return acc;
+          }, {});
+          setStatusCounts(counts);
         } else {
           // No such document
         }
@@ -92,7 +100,7 @@ const VerPedidos = () => {
     const user = auth.currentUser;
     if (user) {
       const db = getFirestore();
-      const q = query(collection(db, 'CLIENTES'), where('email', '==', user.email));
+      const q = query(collection(db, 'EMPLEADOS'), where('email', '==', user.email));
       const querySnapshot = await getDocs(q);
       querySnapshot.forEach((docSnapshot) => {
         const data = docSnapshot.data();
@@ -120,7 +128,7 @@ const VerPedidos = () => {
     }
 
     await printCollectionDetails('DOMICILIOS', 2);
-    await printCollectionDetails('CLIENTES', 2);
+    await printCollectionDetails('EMPLEADOS', 2);
   };
 
   const handlePeriodChange = (e) => {
@@ -131,6 +139,11 @@ const VerPedidos = () => {
     <div className="verpedidos-container">
       <ToastContainer />
       <h2>Pedidos Recientes</h2>
+      <div className="status-summary">
+        {Object.entries(statusCounts).map(([status, count]) => (
+          <span key={status}>{count} {status.replace(/([A-Z])/g, ' $1').toUpperCase()}</span>
+        ))}
+      </div>
       <div className="period-select">
         <label htmlFor="period">Seleccionar Periodo:</label>
         <select id="period" className='period-select-dropdown' value={period} onChange={handlePeriodChange}>

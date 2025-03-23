@@ -29,7 +29,7 @@ const Home = () => {
     const fetchUserData = async (user) => {
       try {
         const db = getFirestore();
-        const q = query(collection(db, 'CLIENTES'), where('email', '==', user.email));
+        const q = query(collection(db, 'EMPLEADOS'), where('email', '==', user.email));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach(async (docSnapshot) => {
           const data = docSnapshot.data();

@@ -167,3 +167,18 @@
   transition: border-color .3s ease, box-shadow .3s ease;
   width: 100%;
 }
+
+.status-summary {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.status-summary span {
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+}

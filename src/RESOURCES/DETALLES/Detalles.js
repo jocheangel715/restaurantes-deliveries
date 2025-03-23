@@ -21,7 +21,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
       if (user) {
         try {
           const db = getFirestore();
-          const q = query(collection(db, 'CLIENTES'), where('email', '==', user.email));
+          const q = query(collection(db, 'EMPLEADOS'), where('email', '==', user.email));
           const querySnapshot = await getDocs(q);
 
           querySnapshot.forEach((docSnapshot) => {
