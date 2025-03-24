@@ -14,6 +14,8 @@ const Detalles = ({ order, closeModal, orderId }) => {
   const [name, setName] = useState('');
   const [userId, setUserId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [partialPayment, setPartialPayment] = useState(false);
+  const [partialAmount, setPartialAmount] = useState('');
 
   useEffect(() => {
     const auth = getAuth();
@@ -36,10 +38,32 @@ const Detalles = ({ order, closeModal, orderId }) => {
     });
   }, [orderId]);
 
+  const determineDateAndShift = () => {
+    const now = new Date();
+    let date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
+    let period = 'MORNING';
+  
+    const hours = now.getHours();
+    if (hours >= 17 || hours < 3) {
+      period = 'NIGHT';
+      if (hours < 3) {
+        const previousDay = new Date(now);
+        previousDay.setDate(now.getDate() - 1);
+        date = `${previousDay.getDate()}-${previousDay.getMonth() + 1}-${previousDay.getFullYear()}`;
+      }
+    } else if (hours >= 3 && hours < 6) {
+      period = 'NIGHT';
+      const previousDay = new Date(now);
+      previousDay.setDate(now.getDate() - 1);
+      date = `${previousDay.getDate()}-${previousDay.getMonth() + 1}-${previousDay.getFullYear()}`;
+    }
+  
+    return { date, period };
+  };
+
   const actualizarPedido = async (status) => {
     try {
-      const now = new Date();
-      const date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
+      const { date, period } = determineDateAndShift();
       const docId = date;
   
       const orderDoc = doc(db, 'PEDIDOS', docId);
@@ -47,7 +71,6 @@ const Detalles = ({ order, closeModal, orderId }) => {
   
       if (orderSnapshot.exists()) {
         const data = orderSnapshot.data();
-        const period = now.getHours() < 17 ? 'MORNING' : 'NIGHT';
   
         if (data[period]) {
           const orderKeys = Object.keys(data[period]);
@@ -81,10 +104,10 @@ const Detalles = ({ order, closeModal, orderId }) => {
       toast.error('Error al actualizar el estado del pedido');
     }
   };
+
   const updateOrderStatus = async (status) => {
     try {
-      const now = new Date();
-      const date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
+      const { date, period } = determineDateAndShift();
       const docId = date;
 
       const orderDoc = doc(db, 'DOMICILIOS', docId);
@@ -92,7 +115,6 @@ const Detalles = ({ order, closeModal, orderId }) => {
 
       if (orderSnapshot.exists()) {
         const data = orderSnapshot.data();
-        const period = now.getHours() < 17 ? 'MORNING' : 'NIGHT';
         const domiciliarioData = data[userId] || {};
 
         if (domiciliarioData[period]) {
@@ -112,7 +134,16 @@ const Detalles = ({ order, closeModal, orderId }) => {
           if (orderFound) {
             const paymentMethodToUse = incorrectPayment ? paymentMethod : order.paymentMethod;
             const balance = domiciliarioData[period].balance || { EFECTIVO: 0, NEQUI: 0 };
-            balance[paymentMethodToUse] = (balance[paymentMethodToUse] || 0) + order.total;
+
+            if (partialPayment && partialAmount) {
+              const partialValue = parseFloat(partialAmount.replace(/[$,]/g, '')) || 0;
+              balance[paymentMethodToUse] = (parseFloat(balance[paymentMethodToUse]) || 0) + partialValue;
+              const remainingValue = order.total - partialValue;
+              const otherMethod = paymentMethodToUse === 'EFECTIVO' ? 'NEQUI' : 'EFECTIVO';
+              balance[otherMethod] = (parseFloat(balance[otherMethod]) || 0) + remainingValue;
+            } else {
+              balance[paymentMethodToUse] = (parseFloat(balance[paymentMethodToUse]) || 0) + order.total;
+            }
 
             await setDoc(orderDoc, { [userId]: { [period]: { ...domiciliarioData[period], balance } } }, { merge: true });
             toast.success(`Pedido actualizado a ${status}`);
@@ -136,10 +167,25 @@ const Detalles = ({ order, closeModal, orderId }) => {
 
   const formatPrice = (value) => {
     if (value === null || value === undefined || value === '') return '0';
-    const stringValue = value.toString();
-    const numberValue = parseFloat(stringValue.replace(/[$,]/g, ''));
+    
+    const numberValue = parseFloat(value.toString().replace(/[$,]/g, ''));
+    
+    if (isNaN(numberValue)) return '0';
+
     return `$${numberValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-  };
+};
+
+const groupProducts = (cart) => {
+  const grouped = {};
+  cart.forEach((product) => {
+    if (grouped[product.name]) {
+      grouped[product.name].quantity += 1;
+    } else {
+      grouped[product.name] = { ...product, quantity: 1 };
+    }
+  });
+  return Object.values(grouped);
+};
 
   const handleEntregado = async () => {
     if (!orderId || !userId) {
@@ -214,10 +260,27 @@ const Detalles = ({ order, closeModal, orderId }) => {
                 <option value="EFECTIVO">EFECTIVO</option>
               </select>
             )}
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={partialPayment}
+                onChange={() => setPartialPayment(!partialPayment)}
+              />
+              ¿El pago fue parcial?
+            </label>
+            {partialPayment && (
+              <input
+                type="text"
+                className="partial-payment-input"
+                placeholder="Ingrese el monto recibido"
+                value={partialAmount}
+                onChange={(e) => setPartialAmount(formatPrice(e.target.value))}
+              />
+            )}
             <h3>Productos:</h3>
-            {order.cart.map((product, index) => (
+            {groupProducts(order.cart).map((product, index) => (
               <div key={index}>
-                <span>{product.name}</span>
+                <span><strong>{product.quantity}X</strong>{product.name}</span>
                 <ul>
                   {product.ingredients.map((ingredient) => (
                     <li key={ingredient}>Sin {ingredient}</li>

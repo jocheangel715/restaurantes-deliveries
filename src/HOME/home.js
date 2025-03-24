@@ -16,6 +16,29 @@ const formatPrice = (value) => {
   return `$${numberValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 };
 
+const determineDateAndShift = () => {
+  const now = new Date();
+  let date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
+  let period = 'MORNING';
+
+  const hours = now.getHours();
+  if (hours >= 17 || hours < 3) {
+    period = 'NIGHT';
+    if (hours < 3) {
+      const previousDay = new Date(now);
+      previousDay.setDate(now.getDate() - 1);
+      date = `${previousDay.getDate()}-${previousDay.getMonth() + 1}-${previousDay.getFullYear()}`;
+    }
+  } else if (hours >= 3 && hours < 6) {
+    period = 'NIGHT';
+    const previousDay = new Date(now);
+    previousDay.setDate(now.getDate() - 1);
+    date = `${previousDay.getDate()}-${previousDay.getMonth() + 1}-${previousDay.getFullYear()}`;
+  }
+
+  return { date, period };
+};
+
 const Home = () => {
   const [name, setName] = useState('');
   const [balance, setBalance] = useState({ EFECTIVO: 0, NEQUI: 0, total: 0 }); // Remove caja
@@ -24,6 +47,10 @@ const Home = () => {
   const [selectedOrder, setSelectedOrder] = useState(null); // State for selected order
   const [period, setPeriod] = useState('MORNING'); // State for selected period
   const navigate = useNavigate(); // Initialize navigate
+
+  const handlePeriodChangeFromVerPedidos = (selectedPeriod) => {
+    setPeriod(selectedPeriod); // Update the period state when VerPedidos changes it
+  };
 
   useEffect(() => {
     const fetchUserData = async (user) => {
@@ -37,24 +64,20 @@ const Home = () => {
           setUserId(data.id);
           console.log('User ID:', data.id);
 
-          // Determinar el periodo del día
-          const now = new Date();
-          const hour = now.getHours();
-          const selectedPeriod = hour >= 17 ? 'NIGHT' : 'MORNING'; // Cambia a 'NIGHT' desde las 18:00 hasta las 23:59
+          const { date } = determineDateAndShift(); // Only get the date
 
-          const dateStr = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
-          const balanceDocRef = doc(db, 'DOMICILIOS', dateStr);
+          const balanceDocRef = doc(db, 'DOMICILIOS', date);
 
           onSnapshot(balanceDocRef, (balanceDoc) => {
             if (balanceDoc.exists()) {
-              const periodData = balanceDoc.data()[data.id] ? balanceDoc.data()[data.id][selectedPeriod] : null;
+              const periodData = balanceDoc.data()[data.id] ? balanceDoc.data()[data.id][period] : null; // Use selected period here
               const balanceData = periodData && periodData.balance ? periodData.balance : { EFECTIVO: 0, NEQUI: 0 };
               const EFECTIVO = balanceData.EFECTIVO || 0;
               const NEQUI = balanceData.NEQUI || 0;
               const total = EFECTIVO + NEQUI;
               setBalance({ EFECTIVO, NEQUI, total });
 
-              // Set orders based on time of day
+              // Set orders based on selected period
               const ordersData = periodData && periodData.orders ? Object.keys(periodData.orders).map(key => ({
                 idPedido: key,
                 ...periodData.orders[key]
@@ -76,7 +99,7 @@ const Home = () => {
         fetchUserData(user);
       }
     });
-  }, [period]);
+  }, [period]); // Add period as a dependency
 
 
   const handleLogout = () => {
@@ -108,7 +131,7 @@ const Home = () => {
       </div>
       <div className="orders">
         <div className="pedidos-container">
-          <VerPedidos /> {/* Render VerPedidos component */}
+          <VerPedidos onPeriodChange={handlePeriodChangeFromVerPedidos} /> {/* Pass the callback to VerPedidos */}
         </div>
       </div>
       <button className="logout-button" onClick={handleLogout}>Cerrar Sesión</button>

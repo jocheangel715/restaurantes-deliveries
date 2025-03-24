@@ -220,6 +220,10 @@ input[type="checkbox"]:hover {
   justify-content: center; /* Centra horizontalmente */
 }
 
+.checkbox-label + .checkbox-label {
+  margin-top: 30px;
+}
+
 .period-select-dropdown {
   background-color: #121212;
   border: 1px solid var(--orders-color);
@@ -230,4 +234,21 @@ input[type="checkbox"]:hover {
   padding: 10px;
   transition: border-color .3s ease, box-shadow .3s ease;
   width: 100%;
+}
+
+.partial-payment-input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid var(--orders-color);
+  border-radius: 5px;
+  font-size: 16px;
+  color: #fff;
+  background-color: #121212;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.partial-payment-input:focus {
+  border-color: var(--button-color);
+  box-shadow: 0 0 5px var(--button-color);
 }

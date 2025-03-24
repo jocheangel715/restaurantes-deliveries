@@ -8,12 +8,35 @@ import 'react-toastify/dist/ReactToastify.css';
 import { getAuth, onAuthStateChanged } from 'firebase/auth'; // Import getAuth and onAuthStateChanged
 import { getFirestore, query, collection, where, getDocs } from 'firebase/firestore'; // Import missing Firestore functions
 
-const VerPedidos = () => {
+const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null); // State for selected order
   const [period, setPeriod] = useState('MORNING'); // State for selected period
   const [userId, setUserId] = useState(''); // State for user ID
   const [statusCounts, setStatusCounts] = useState({}); // State for status counts
+
+  const determineDateAndShift = () => {
+    const now = new Date();
+    let date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
+    let period = 'MORNING';
+
+    const hours = now.getHours();
+    if (hours >= 17 || hours < 3) {
+      period = 'NIGHT';
+      if (hours < 3) {
+        const previousDay = new Date(now);
+        previousDay.setDate(now.getDate() - 1);
+        date = `${previousDay.getDate()}-${previousDay.getMonth() + 1}-${previousDay.getFullYear()}`;
+      }
+    } else if (hours >= 3 && hours < 6) {
+      period = 'NIGHT';
+      const previousDay = new Date(now);
+      previousDay.setDate(now.getDate() - 1);
+      date = `${previousDay.getDate()}-${previousDay.getMonth() + 1}-${previousDay.getFullYear()}`;
+    }
+
+    return { date, period };
+  };
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -39,26 +62,31 @@ const VerPedidos = () => {
     if (!userId) return;
 
     const fetchOrders = () => {
-      const now = new Date();
-      const date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
+      const { date } = determineDateAndShift(); // Only get the date
       const docId = date;
 
       const docRef = doc(db, 'DOMICILIOS', docId);
       const unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const userOrders = data[userId] ? data[userId][period] : null;
-          const items = userOrders ? Object.keys(userOrders).filter(key => key !== 'balance').map(key => ({ id: key, ...userOrders[key] })) : [];
-          const filteredItems = items.filter(item => item.status !== 'ENTREGADO');
-          filteredItems.sort((a, b) => (b.timestamp && b.timestamp.toDate()) - (a.timestamp && a.timestamp.toDate())); // Sort by timestamp
-          setOrders(filteredItems);
+          const userOrders = data[userId] ? data[userId][period] : null; // Use selected period here
+          const items = userOrders
+            ? Object.keys(userOrders)
+                .filter(key => key !== 'balance')
+                .map(key => ({ id: key, ...userOrders[key] }))
+            : [];
 
-          // Calculate status counts
-          const counts = filteredItems.reduce((acc, item) => {
+          // Calculate status counts including "ENTREGADO"
+          const counts = items.reduce((acc, item) => {
             acc[item.status] = (acc[item.status] || 0) + 1;
             return acc;
           }, {});
           setStatusCounts(counts);
+
+          // Filter out "ENTREGADO" for display
+          const filteredItems = items.filter(item => item.status !== 'ENTREGADO');
+          filteredItems.sort((a, b) => (b.timestamp && b.timestamp.toDate()) - (a.timestamp && a.timestamp.toDate())); // Sort by timestamp
+          setOrders(filteredItems);
         } else {
           // No such document
         }
@@ -68,7 +96,7 @@ const VerPedidos = () => {
     };
 
     fetchOrders();
-  }, [period, userId]);
+  }, [userId, period]); // Add period as a dependency
 
   const printOrderDetails = (order, indent = 0) => {
     const indentation = ' '.repeat(indent);
@@ -132,7 +160,19 @@ const VerPedidos = () => {
   };
 
   const handlePeriodChange = (e) => {
-    setPeriod(e.target.value);
+    const selectedPeriod = e.target.value;
+    setPeriod(selectedPeriod);
+    onPeriodChange(selectedPeriod); // Notify parent component of the selected period
+  };
+
+  const formatPrice = (value) => {
+    if (value === null || value === undefined || value === '') return '0';
+
+    const numberValue = parseFloat(value.toString().replace(/[$,]/g, ''));
+
+    if (isNaN(numberValue)) return '0';
+
+    return `$${numberValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
   };
 
   return (
@@ -146,7 +186,7 @@ const VerPedidos = () => {
       </div>
       <div className="period-select">
         <label htmlFor="period">Seleccionar Periodo:</label>
-        <select id="period" className='period-select-dropdown' value={period} onChange={handlePeriodChange}>
+        <select id="period" className="period-select-dropdown" value={period} onChange={handlePeriodChange}>
           <option value="MORNING">MORNING</option>
           <option value="NIGHT">NIGHT</option>
         </select>
@@ -177,7 +217,7 @@ const VerPedidos = () => {
               <p><strong>Cliente:</strong> {order.clientName}</p>
               <p><strong>Teléfono:</strong> {order.clientPhone}</p>
               <p><strong>Dirección:</strong> {order.clientAddress} - {order.clientBarrio}</p>
-              <p><strong>Total:</strong> {order.total}</p>
+              <p><strong>Total:</strong> {formatPrice(order.total)}</p>
               <p><strong>Estado:</strong> {order.status}</p>
               <p><strong>Fecha:</strong> {order.timestamp ? order.timestamp.toDate().toLocaleString() : 'N/A'}</p>
             </div>
