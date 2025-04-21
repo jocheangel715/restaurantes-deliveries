@@ -60,7 +60,7 @@
 
 /* Estilo para DOMICILIO */
 .verpedidos-order-item.domicilio {
-  background: linear-gradient(135deg, #4caf50, #2e7d32); /* Verde */
+  background: linear-gradient(135deg, #014421, #014421); /* Match EFECTIVO green */
 }
 
 .verpedidos-order-item:hover {
@@ -70,7 +70,7 @@
 
 /* Texto dentro del pedido */
 .verpedidos-order-item h3 {
-  font-size: 1.3rem;
+  font-size: 1.8rem; /* Increase font size for order number */
   margin-bottom: 10px;
   font-weight: bold;
 }

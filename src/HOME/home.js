@@ -62,7 +62,6 @@ const Home = () => {
           const data = docSnapshot.data();
           setName(data.name);
           setUserId(data.id);
-          console.log('User ID:', data.id);
 
           const { date } = determineDateAndShift(); // Only get the date
 
@@ -140,6 +139,7 @@ const Home = () => {
         <Detalles
           order={selectedOrder}
           closeModal={() => setSelectedOrder(null)}
+          userId={userId} // Pass userId to Detalles
         />
       )}
     </div>

@@ -132,7 +132,6 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
       const querySnapshot = await getDocs(q);
       querySnapshot.forEach((docSnapshot) => {
         const data = docSnapshot.data();
-        console.log('Domiciliario ID:', data.id); // Log the delivery person's ID
         order.deliveryPersonId = data.id; // Save the delivery person's ID in the order
 
         // Set the IDEPEDIDOAHORA field
@@ -146,7 +145,6 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
               orderKeys.forEach((key) => {
                 if (domiciliarioData[key].id === order.id) {
                   order.IDEPEDIDOAHORA = key;
-                  console.log('IDEPEDIDOAHORA:', key); // Log the IDEPEDIDOAHORA field
                 }
               });
             }
@@ -232,6 +230,7 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
           closeModal={() => setSelectedOrder(null)}
           orderId={selectedOrder.id} // Pass the order ID to the Detalles component
           deliveryPersonId={selectedOrder.deliveryPersonId} // Pass the delivery person ID to the Detalles component
+          userId={userId} // Pass the userId to the Detalles component
         />
       )}
     </div>

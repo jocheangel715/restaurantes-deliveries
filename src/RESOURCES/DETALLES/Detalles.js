@@ -7,36 +7,20 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Detalles.css';
 
-const Detalles = ({ order, closeModal, orderId }) => {
+const Detalles = ({ order, closeModal, orderId, userId }) => { // Accept userId as a prop
   const [isDomicilio, setIsDomicilio] = useState(false);
   const [incorrectPayment, setIncorrectPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [name, setName] = useState('');
-  const [userId, setUserId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [partialPayment, setPartialPayment] = useState(false);
   const [partialAmount, setPartialAmount] = useState('');
 
   useEffect(() => {
-    const auth = getAuth();
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const db = getFirestore();
-          const q = query(collection(db, 'EMPLEADOS'), where('email', '==', user.email));
-          const querySnapshot = await getDocs(q);
-
-          querySnapshot.forEach((docSnapshot) => {
-            const data = docSnapshot.data();
-            setName(data.name);
-            setUserId(data.id);
-          });
-        } catch (error) {
-          console.error('Error obteniendo datos del usuario:', error);
-        }
-      }
-    });
-  }, [orderId]);
+    if (!userId) {
+      console.error('User ID is missing');
+    }
+  }, [userId]);
 
   const determineDateAndShift = () => {
     const now = new Date();
@@ -115,7 +99,7 @@ const Detalles = ({ order, closeModal, orderId }) => {
 
       if (orderSnapshot.exists()) {
         const data = orderSnapshot.data();
-        const domiciliarioData = data[userId] || {};
+        const domiciliarioData = data[userId] || {}; // Use passed userId directly
 
         if (domiciliarioData[period]) {
           const orderKeys = Object.keys(domiciliarioData[period]).filter(key => key !== 'balance');
@@ -198,19 +182,28 @@ const groupProducts = (cart) => {
   };
 
   const openWhatsApp = (phoneNumber) => {
-    const whatsappUrl = `https://wa.me/${phoneNumber}`;
+    const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+57${phoneNumber}`;
+    const whatsappUrl = `https://wa.me/${formattedPhoneNumber}`;
     window.open(whatsappUrl, '_blank');
   };
+
   const openGoogleMaps = (address) => {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
     window.open(mapsUrl, '_blank');
+  };
+
+  const getModalStyle = () => {
+    if (incorrectPayment && paymentMethod) {
+      return paymentMethod === 'EFECTIVO' ? { backgroundColor: '#014421' } : { backgroundColor: '#0a2f3d' };
+    }
+    return order.paymentMethod === 'EFECTIVO' ? { backgroundColor: '#014421' } : { backgroundColor: '#0a2f3d' };
   };
 
   return (
     <div className="detalles-container">
       <ToastContainer />
       <div className="detalles-overlay" onClick={closeModal}></div>
-      <div className="detalles-modal">
+      <div className="detalles-modal" style={getModalStyle()}>
         <div className="detalles-modal-content">
           <span className="detalles-close" onClick={closeModal}>&times;</span>
           <h2>Detalles del Pedido</h2>
