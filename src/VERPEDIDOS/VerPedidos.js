@@ -14,6 +14,7 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
   const [period, setPeriod] = useState('MORNING'); // State for selected period
   const [userId, setUserId] = useState(''); // State for user ID
   const [statusCounts, setStatusCounts] = useState({}); // State for status counts
+  const [showEntregados, setShowEntregados] = useState(false); // Estado para mostrar entregados
 
   const determineDateAndShift = () => {
     const now = new Date();
@@ -83,8 +84,13 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
           }, {});
           setStatusCounts(counts);
 
-          // Filter out "ENTREGADO" for display
-          const filteredItems = items.filter(item => item.status !== 'ENTREGADO');
+          // Filtrar según showEntregados
+          let filteredItems;
+          if (showEntregados) {
+            filteredItems = items.filter(item => item.status === 'ENTREGADO');
+          } else {
+            filteredItems = items.filter(item => item.status !== 'ENTREGADO');
+          }
           filteredItems.sort((a, b) => (b.timestamp && b.timestamp.toDate()) - (a.timestamp && a.timestamp.toDate())); // Sort by timestamp
           setOrders(filteredItems);
         } else {
@@ -96,7 +102,7 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
     };
 
     fetchOrders();
-  }, [userId, period]); // Add period as a dependency
+  }, [userId, period, showEntregados]); // Agregar showEntregados como dependencia
 
   const printOrderDetails = (order, indent = 0) => {
     const indentation = ' '.repeat(indent);
@@ -179,7 +185,13 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
       <h2>Pedidos Recientes</h2>
       <div className="status-summary">
         {Object.entries(statusCounts).map(([status, count]) => (
-          <span key={status}>{count} {status.replace(/([A-Z])/g, ' $1').toUpperCase()}</span>
+          <span
+            key={status}
+            style={status === 'ENTREGADO' ? { cursor: 'pointer', textDecoration: showEntregados ? 'underline' : 'none' } : {}}
+            onClick={status === 'ENTREGADO' ? () => setShowEntregados(!showEntregados) : undefined}
+          >
+            {count} {status.replace(/([A-Z])/g, ' $1').toUpperCase()}
+          </span>
         ))}
       </div>
       <div className="period-select">
@@ -201,6 +213,9 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
               break;
             case 'ENDOMICILIO':
               statusClass = 'domicilio';
+              break;
+            case 'ENTREGADO':
+              statusClass = 'entregado';
               break;
             default:
               break;

@@ -26,6 +26,13 @@
   z-index: 1001;
   width: 80%;
   max-width: 500px;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.detalles-modal::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .detalles-modal-content {
@@ -90,6 +97,13 @@
   max-width: 500px;
   transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
   opacity: 1;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.detalles-modal::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .detalles-modal-content {
@@ -251,4 +265,55 @@ input[type="checkbox"]:hover {
 .partial-payment-input:focus {
   border-color: var(--button-color);
   box-shadow: 0 0 5px var(--button-color);
+}
+
+.recomendable-field {
+  cursor: pointer;
+  color: #fa2c57;
+  text-decoration: underline;
+  font-weight: bold;
+  margin-left: 5px;
+}
+.recomendable-field:hover {
+  color: #d43f3f;
+}
+
+.recomendacion-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recomendacion-modal {
+  background: #fff;
+  padding: 30px 20px 20px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  min-width: 300px;
+  max-width: 90vw;
+  color: #222;
+  position: relative;
+  text-align: left;
+  margin: 0;
+}
+.recomendacion-modal label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+.recomendacion-modal input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 16px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  box-sizing: border-box;
 }

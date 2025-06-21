@@ -15,6 +15,14 @@ const Detalles = ({ order, closeModal, orderId, userId }) => { // Accept userId 
   const [isProcessing, setIsProcessing] = useState(false);
   const [partialPayment, setPartialPayment] = useState(false);
   const [partialAmount, setPartialAmount] = useState('');
+  const [showRecommendationModal, setShowRecommendationModal] = useState(false);
+  const [recommendationField, setRecommendationField] = useState('');
+  const [recommendationValues, setRecommendationValues] = useState({
+    clientName: '',
+    clientPhone: '',
+    clientAddress: '',
+    clientBarrio: ''
+  });
 
   useEffect(() => {
     if (!userId) {
@@ -65,6 +73,11 @@ const Detalles = ({ order, closeModal, orderId, userId }) => { // Accept userId 
               data[period][key].status = status;
               if (incorrectPayment) {
                 data[period][key].paymentMethod = paymentMethod;
+              }
+              // Si el método de pago es CUENTA, solo actualiza estado y método de pago
+              if ((incorrectPayment ? paymentMethod : order.paymentMethod) === 'CUENTA') {
+                orderFound = true;
+                return;
               }
               orderFound = true;
             }
@@ -119,6 +132,15 @@ const Detalles = ({ order, closeModal, orderId, userId }) => { // Accept userId 
             const paymentMethodToUse = incorrectPayment ? paymentMethod : order.paymentMethod;
             const balance = domiciliarioData[period].balance || { EFECTIVO: 0, NEQUI: 0 };
 
+            // Si el método de pago es CUENTA, solo actualiza el estado, no el balance
+            if (paymentMethodToUse === 'CUENTA') {
+              await setDoc(orderDoc, { [userId]: { [period]: { ...domiciliarioData[period] } } }, { merge: true });
+              toast.success(`Pedido actualizado a ${status}`);
+              // Call actualizarPedido to update the order status in the 'PEDIDOS' collection
+              await actualizarPedido(status);
+              return;
+            }
+
             if (partialPayment && partialAmount) {
               const partialValue = parseFloat(partialAmount.replace(/[$,]/g, '')) || 0;
               balance[paymentMethodToUse] = (parseFloat(balance[paymentMethodToUse]) || 0) + partialValue;
@@ -131,7 +153,6 @@ const Detalles = ({ order, closeModal, orderId, userId }) => { // Accept userId 
 
             await setDoc(orderDoc, { [userId]: { [period]: { ...domiciliarioData[period], balance } } }, { merge: true });
             toast.success(`Pedido actualizado a ${status}`);
-            
             // Call actualizarPedido to update the order status in the 'PEDIDOS' collection
             await actualizarPedido(status);
           } else {
@@ -193,10 +214,50 @@ const groupProducts = (cart) => {
   };
 
   const getModalStyle = () => {
+    const method = incorrectPayment && paymentMethod ? paymentMethod : order.paymentMethod;
+    if (method === 'CUENTA') {
+      return { backgroundColor: '#fa2c57' };
+    }
     if (incorrectPayment && paymentMethod) {
       return paymentMethod === 'EFECTIVO' ? { backgroundColor: '#014421' } : { backgroundColor: '#0a2f3d' };
     }
     return order.paymentMethod === 'EFECTIVO' ? { backgroundColor: '#014421' } : { backgroundColor: '#0a2f3d' };
+  };
+
+  const openRecommendationModal = (field) => {
+    setRecommendationField(field);
+    setRecommendationValues({
+      clientName: order.clientName,
+      clientPhone: order.clientPhone,
+      clientAddress: order.clientAddress,
+      clientBarrio: order.clientBarrio
+    });
+    setShowRecommendationModal(true);
+  };
+
+  const handleRecommendationChange = (e) => {
+    setRecommendationValues({
+      ...recommendationValues,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleRecommend = async () => {
+    try {
+      if (!order.clientId) {
+        toast.error('No se encontró el id del cliente');
+        return;
+      }
+      const docRef = doc(db, 'RECOMENDACIONES', order.clientId);
+      await setDoc(docRef, {
+        ...recommendationValues,
+        timestamp: new Date()
+      });
+      toast.success('¡Recomendación enviada!');
+      setShowRecommendationModal(false);
+    } catch (error) {
+      toast.error('Error al enviar la recomendación');
+    }
   };
 
   return (
@@ -206,11 +267,24 @@ const groupProducts = (cart) => {
       <div className="detalles-modal" style={getModalStyle()}>
         <div className="detalles-modal-content">
           <span className="detalles-close" onClick={closeModal}>&times;</span>
-          <h2>Detalles del Pedido</h2>
+          <h2 onClick={() => {
+            setRecommendationField('all');
+            setRecommendationValues({
+              clientName: order.clientName,
+              clientPhone: order.clientPhone,
+              clientAddress: order.clientAddress,
+              clientBarrio: order.clientBarrio
+            });
+            setShowRecommendationModal(true);
+          }} style={{cursor:'pointer', color:'#ffffff'}}>
+            Detalles del Pedido
+          </h2>
           <div className="detalles-content">
             <h3>Información del Cliente:</h3>
-            <p><strong>Nombre:</strong> {order.clientName}</p>
-            <p><strong>Número del Pedido:</strong> {orderId}</p> {/* Display order number */}
+            <p>
+              <strong>Nombre:</strong> {order.clientName}
+            </p>
+            <p><strong>Número del Pedido:</strong> {orderId}</p>
             <p>
               <strong>Teléfono:</strong> {order.clientPhone}
               <button 
@@ -229,7 +303,9 @@ const groupProducts = (cart) => {
                 Maps
               </button>
             </p>
-            <p><strong>Barrio:</strong> {order.clientBarrio}</p>
+            <p>
+              <strong>Barrio:</strong> {order.clientBarrio}
+            </p>
             <p><strong>Método de Pago:</strong> {incorrectPayment ? paymentMethod : order.paymentMethod}</p> {/* Display payment method */}
             <p><strong>Total:</strong> {formatPrice(order.total)}</p> {/* Display total */}
             <label className="checkbox-label">
@@ -291,6 +367,41 @@ const groupProducts = (cart) => {
           </button>
         </div>
       </div>
+      {showRecommendationModal && (
+        <div className="recomendacion-modal-overlay">
+          <div className="recomendacion-modal">
+            <span className="detalles-close" onClick={() => setShowRecommendationModal(false)}>&times;</span>
+            <h3>Recomendar cambio de información</h3>
+            <form onSubmit={e => { e.preventDefault(); handleRecommend(); }}>
+              {(recommendationField === 'all' || recommendationField === 'clientName') && (
+                <div>
+                  <label>Nuevo nombre:</label>
+                  <input type="text" name="clientName" value={recommendationValues.clientName} onChange={handleRecommendationChange} />
+                </div>
+              )}
+              {(recommendationField === 'all' || recommendationField === 'clientPhone') && (
+                <div>
+                  <label>Nuevo teléfono:</label>
+                  <input type="text" name="clientPhone" value={recommendationValues.clientPhone} onChange={handleRecommendationChange} />
+                </div>
+              )}
+              {(recommendationField === 'all' || recommendationField === 'clientAddress') && (
+                <div>
+                  <label>Nueva dirección:</label>
+                  <input type="text" name="clientAddress" value={recommendationValues.clientAddress} onChange={handleRecommendationChange} />
+                </div>
+              )}
+              {(recommendationField === 'all' || recommendationField === 'clientBarrio') && (
+                <div>
+                  <label>Nuevo barrio:</label>
+                  <input type="text" name="clientBarrio" value={recommendationValues.clientBarrio} onChange={handleRecommendationChange} />
+                </div>
+              )}
+              <button type="submit" className="detalles-button">Recomendar</button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
