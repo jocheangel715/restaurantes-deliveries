@@ -220,10 +220,19 @@ const VerPedidos = ({ onPeriodChange }) => { // Accept onPeriodChange as a prop
             default:
               break;
           }
+
+          // Método de pago: agrega clase según el método
+          let paymentClass = '';
+          if (order.paymentMethod === 'EFECTIVO') {
+            paymentClass = 'pago-efectivo';
+          } else if (order.paymentMethod === 'NEQUI') {
+            paymentClass = 'pago-nequi';
+          }
+
           return (
             <div
               key={order.id}
-              className={`verpedidos-order-item ${statusClass}`}
+              className={`verpedidos-order-item ${statusClass} ${paymentClass}`}
               onClick={() => handleOrderClick(order)}
             >
               <h3>Pedido #{order.id}</h3>

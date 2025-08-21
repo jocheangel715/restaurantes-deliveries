@@ -1,6 +1,6 @@
 /* Contenedor principal */
 .verpedidos-container {
-  max-width: 90%;
+  max-width: 100%;
   width: 800px;
   padding: 20px;
   background: #121212; /* Negro elegante */
@@ -61,6 +61,16 @@
 /* Estilo para DOMICILIO */
 .verpedidos-order-item.domicilio {
   background: linear-gradient(135deg, #014421, #014421); /* Match EFECTIVO green */
+}
+
+/* Método de pago EFECTIVO: verde */
+.verpedidos-order-item.pago-efectivo {
+  background: linear-gradient(135deg, #1db954, #014421); /* Verde Spotify + verde oscuro */
+}
+
+/* Método de pago NEQUI: morado oscuro */
+.verpedidos-order-item.pago-nequi {
+  background: linear-gradient(135deg, #3a006a, #6a11cb); /* Morado oscuro + morado */
 }
 
 .verpedidos-order-item:hover {
