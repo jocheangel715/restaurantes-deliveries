@@ -60,7 +60,6 @@ body::-webkit-scrollbar, html::-webkit-scrollbar {
 }
 
 .login-input {
-  width: calc(100% - 20px); /* Ensure inputs have the same width */
   padding: 10px;
   background-color: var(--input-background);
   border: 1px solid var(--input-border);
