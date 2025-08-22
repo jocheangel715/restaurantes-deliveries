@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/restaurantes-deliveries/static/css/main.45eb2992.css",
-    "main.js": "/restaurantes-deliveries/static/js/main.6e1f9bb6.js",
+    "main.css": "/restaurantes-deliveries/static/css/main.c30585cd.css",
+    "main.js": "/restaurantes-deliveries/static/js/main.bfa419bc.js",
     "static/js/453.613c4fef.chunk.js": "/restaurantes-deliveries/static/js/453.613c4fef.chunk.js",
     "index.html": "/restaurantes-deliveries/index.html",
-    "main.45eb2992.css.map": "/restaurantes-deliveries/static/css/main.45eb2992.css.map",
-    "main.6e1f9bb6.js.map": "/restaurantes-deliveries/static/js/main.6e1f9bb6.js.map",
+    "main.c30585cd.css.map": "/restaurantes-deliveries/static/css/main.c30585cd.css.map",
+    "main.bfa419bc.js.map": "/restaurantes-deliveries/static/js/main.bfa419bc.js.map",
     "453.613c4fef.chunk.js.map": "/restaurantes-deliveries/static/js/453.613c4fef.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.45eb2992.css",
-    "static/js/main.6e1f9bb6.js"
+    "static/css/main.c30585cd.css",
+    "static/js/main.bfa419bc.js"
   ]
 }
