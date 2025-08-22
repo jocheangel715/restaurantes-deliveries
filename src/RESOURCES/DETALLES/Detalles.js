@@ -502,7 +502,7 @@ const groupProducts = (cart) => {
         <div
           className="detalles-modal"
           style={{
-            background: "#222222ee",
+            background: "#222222e",
             color: "#fff",
             textAlign: "center",
             maxWidth: "350px",
