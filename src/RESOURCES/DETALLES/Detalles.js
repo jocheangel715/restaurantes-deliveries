@@ -28,38 +28,45 @@ const Detalles = ({ order, closeModal, orderId, userId }) => { // Accept userId 
   });
 
   useEffect(() => {
-  if (!userId) {
-    console.error("User ID is missing");
-  }
-
-  const checkConnection = async () => {
-    try {
-      // medir latencia simple con un ping a google
-      const start = Date.now();
-      await fetch("https://www.google.com", { mode: "no-cors" });
-      const latency = Date.now() - start;
-
-      // obtener info de la API de Network Information
-      const connection =
-        navigator.connection ||
-        navigator.mozConnection ||
-        navigator.webkitConnection;
-
-      const downlink = connection?.downlink || 0; // Mbps estimados
-
-      // criterio: buena conexión si latencia < 200ms y velocidad > 1Mbps
-      const good = latency < 200 && downlink > 1;
-      setConnectionStatus({ good, speed: downlink });
-    } catch (error) {
-      setConnectionStatus({ good: false, speed: 0 });
+    if (!userId) {
+      console.error("User ID is missing");
     }
-  };
 
-  checkConnection(); // ejecutar al inicio
-  const interval = setInterval(checkConnection, 10000); // revisar cada 10s
+    const checkConnection = async () => {
+      try {
+        // medir latencia simple con un ping a google
+        const start = Date.now();
+        await fetch("https://www.google.com", { mode: "no-cors" });
+        const latency = Date.now() - start;
 
-  return () => clearInterval(interval);
-}, [userId]);
+        // obtener info de la API de Network Information
+        const connection =
+          navigator.connection ||
+          navigator.mozConnection ||
+          navigator.webkitConnection;
+
+        // Para móviles, la API puede no estar disponible o ser menos precisa
+        // Permitimos velocidades muy bajas (>= 0.1 Mbps) y latencia < 2000ms
+        const downlink = connection?.downlink || 0; // Mbps estimados
+
+        // Si no hay info de velocidad, solo usamos la latencia
+        let good;
+        if (downlink === 0) {
+          good = latency < 2000; // hasta 2 segundos de latencia permitida
+        } else {
+          good = latency < 2000 && downlink >= 0.1; // velocidad mínima 0.1 Mbps
+        }
+        setConnectionStatus({ good, speed: downlink });
+      } catch (error) {
+        setConnectionStatus({ good: false, speed: 0 });
+      }
+    };
+
+    checkConnection(); // ejecutar al inicio
+    const interval = setInterval(checkConnection, 10000); // revisar cada 10s
+
+    return () => clearInterval(interval);
+  }, [userId]);
 
   
   
